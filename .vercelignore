@@ -9,9 +9,6 @@ bin/
 # Database files
 db/
 
-# Images (large)
-images/
-
 # Static files
 static/
 

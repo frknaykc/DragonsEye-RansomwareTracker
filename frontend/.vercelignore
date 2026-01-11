@@ -1,0 +1,7 @@
+# Frontend Vercel Ignore
+# Only ignore node_modules and build artifacts
+
+node_modules/
+.next/
+.vercel/
+
