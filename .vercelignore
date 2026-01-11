@@ -1,0 +1,43 @@
+# =============================================================================
+# Vercel Ignore - Only deploy frontend
+# =============================================================================
+
+# Backend
+api/
+bin/
+
+# Database files
+db/
+
+# Images (large)
+images/
+
+# Static files
+static/
+
+# Logs
+logs/
+
+# Temporary
+tmp/
+
+# Uploads
+uploads/
+
+# Config files
+etc/
+
+# Python
+venv/
+*.py
+__pycache__/
+requirements.txt
+
+# Other
+*.csv
+*.md
+LICENSE
+.gitignore.public
+.env.sample
+env.example
+
