@@ -152,10 +152,22 @@ interface CountryData {
 }
 
 function getApiBase(): string {
-  if (typeof window !== 'undefined') {
-    return `http://${window.location.hostname}:8000`
+  // Environment variable override
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  return "http://localhost:8000"
+  
+  // Production check
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('dragons.community') || 
+        window.location.hostname.includes('vercel.app')) {
+      return 'https://ransomwareapi.dragons.community';
+    }
+    // Local development
+    return `http://${window.location.hostname}:8000`;
+  }
+  
+  return "http://localhost:8000";
 }
 
 export function InteractiveWorldMap() {

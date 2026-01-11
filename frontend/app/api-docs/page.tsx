@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -266,6 +266,16 @@ export default function APIDocsPage() {
   const [baseUrl, setBaseUrl] = useState("http://localhost:8000")
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["Statistics"]))
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Set correct base URL based on environment
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname.includes('dragons.community') || 
+          window.location.hostname.includes('vercel.app')) {
+        setBaseUrl('https://ransomwareapi.dragons.community')
+      }
+    }
+  }, [])
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)

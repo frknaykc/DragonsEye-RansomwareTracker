@@ -30,6 +30,10 @@ function getApiBase(): string {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('dragons.community') || 
+        window.location.hostname.includes('vercel.app')) {
+      return 'https://ransomwareapi.dragons.community';
+    }
     return `http://${window.location.hostname}:8000`;
   }
   return "http://localhost:8000";
