@@ -43,6 +43,7 @@ GROUP_LOGOS_DIR = IMAGES_DIR / "groups"
 
 VICTIMS_FILE = DB_DIR / "victims.json"
 GROUPS_FILE = DB_DIR / "groups.json"
+NEGOTIATIONS_FILE = DB_DIR / "negotiations_data.json"
 SCHEDULER_STATUS_FILE = TMP_DIR / "scheduler_status.json"
 
 # Create directories if they don't exist
@@ -253,6 +254,14 @@ def load_groups() -> List[Dict]:
     if not GROUPS_FILE.exists():
         return []
     with open(GROUPS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def load_negotiations() -> Dict:
+    """Load negotiations data from JSON file"""
+    if not NEGOTIATIONS_FILE.exists():
+        return {}
+    with open(NEGOTIATIONS_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 # Cache for performance
@@ -2004,6 +2013,50 @@ async def rss_groups_feed():
         media_type="application/rss+xml",
         headers={"Content-Type": "application/rss+xml; charset=utf-8"}
     )
+
+
+# ============================================================================
+# Negotiations Endpoints
+# ============================================================================
+
+@app.get("/api/v1/negotiations", tags=["Negotiations"])
+async def get_negotiations():
+    """Get ransomware negotiation conversations data"""
+    data = load_negotiations()
+    
+    if not data:
+        return {
+            "total_groups": 0,
+            "total_chats": 0,
+            "paid_count": 0,
+            "chats": []
+        }
+    
+    chats = []
+    for group_name, group_chats in data.items():
+        for chat in group_chats:
+            raw_url = f"https://raw.githubusercontent.com/Casualtek/Ransomchats/main/{group_name}/{chat.get('chat_id', '')}.json"
+            chats.append({
+                "group": group_name,
+                "chatId": chat.get('chat_id', ''),
+                "messages": chat.get('messages'),
+                "initialRansom": chat.get('initial_ransom'),
+                "negotiatedRansom": chat.get('negotiated_ransom'),
+                "paid": chat.get('paid', False),
+                "link": raw_url
+            })
+    
+    total_groups = len(data.keys())
+    total_chats = len(chats)
+    paid_count = sum(1 for c in chats if c.get('paid'))
+    
+    return {
+        "total_groups": total_groups,
+        "total_chats": total_chats,
+        "paid_count": paid_count,
+        "chats": chats
+    }
+
 
 # ============================================================================
 # Main Entry Point

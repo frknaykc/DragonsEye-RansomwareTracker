@@ -1,9 +1,10 @@
-import "server-only"
+"use client"
+
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card, CardContent } from "@/components/ui/card"
 import NegotiationClient from "./negotiation-client"
-import { promises as fs } from 'fs'
-import path from 'path'
+import { Loader2 } from "lucide-react"
 
 type ChatItem = {
   group: string
@@ -15,55 +16,41 @@ type ChatItem = {
   link?: string
 }
 
-type NegotiationData = Record<string, {
-  chat_id: string
-  messages: number | null
-  initial_ransom: string | null
-  negotiated_ransom: string | null
-  paid: boolean
-  link: string | null
-}[]>
-
-async function loadNegotiationsData(): Promise<ChatItem[]> {
-  try {
-    // Load scraped data from ransomware.live
-    const filePath = path.join(process.cwd(), '..', 'db', 'negotiations_data.json')
-    const fileContent = await fs.readFile(filePath, 'utf-8')
-    const data: NegotiationData = JSON.parse(fileContent)
-    
-    const chats: ChatItem[] = []
-    
-    for (const [groupName, groupChats] of Object.entries(data)) {
-      for (const chat of groupChats) {
-        // Build raw GitHub URL for chat content
-        const rawUrl = `https://raw.githubusercontent.com/Casualtek/Ransomchats/main/${encodeURIComponent(groupName)}/${chat.chat_id}.json`
-        
-        chats.push({
-          group: groupName,
-          chatId: chat.chat_id,
-          messages: chat.messages,
-          initialRansom: chat.initial_ransom,
-          negotiatedRansom: chat.negotiated_ransom,
-          paid: chat.paid,
-          link: rawUrl  // Use GitHub raw URL for chat content
-        })
-      }
-    }
-    
-    return chats
-  } catch (error) {
-    console.error('Failed to load negotiations data:', error)
-    return []
-  }
+type NegotiationsResponse = {
+  total_groups: number
+  total_chats: number
+  paid_count: number
+  chats: ChatItem[]
 }
 
-export default async function NegotiationPage() {
-  const chats = await loadNegotiationsData()
-  
-  // Count stats
-  const totalGroups = new Set(chats.map(c => c.group)).size
-  const totalChats = chats.length
-  const paidCount = chats.filter(c => c.paid).length
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname.includes('dragons.community') || window.location.hostname.includes('vercel.app'))
+    ? 'https://ransomwareapi.dragons.community'
+    : 'http://localhost:8000');
+
+export default function NegotiationPage() {
+  const [data, setData] = useState<NegotiationsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/negotiations`)
+        if (!res.ok) {
+          throw new Error('Failed to fetch negotiations data')
+        }
+        const result = await res.json()
+        setData(result)
+      } catch (err) {
+        console.error('Failed to load negotiations:', err)
+        setError('Failed to load negotiations data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,23 +77,47 @@ export default async function NegotiationPage() {
               {/* Stats */}
               <div className="flex flex-wrap gap-6">
                 <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                  <span className="text-2xl font-bold text-white">{totalGroups}</span>
+                  <span className="text-2xl font-bold text-white">{loading ? "-" : data?.total_groups || 0}</span>
                   <span className="text-sm text-muted-foreground">Threat Actors</span>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                  <span className="text-2xl font-bold text-white">{totalChats}</span>
+                  <span className="text-2xl font-bold text-white">{loading ? "-" : data?.total_chats || 0}</span>
                   <span className="text-sm text-muted-foreground">Conversations</span>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-green-900/30 border border-green-700/30">
-                  <span className="text-2xl font-bold text-green-400">{paidCount}</span>
+                  <span className="text-2xl font-bold text-green-400">{loading ? "-" : data?.paid_count || 0}</span>
                   <span className="text-sm text-green-300/70">Paid Ransoms</span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <Card className="border-border bg-card">
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                  <p className="text-lg">Loading negotiations data...</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <Card className="border-red-500/20 bg-red-950/20">
+              <CardContent className="py-12">
+                <div className="text-center text-red-400">
+                  <p className="text-lg">{error}</p>
+                  <p className="text-sm mt-2 text-muted-foreground">Please try again later.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Negotiation List */}
-          {chats.length === 0 ? (
+          {!loading && !error && data && data.chats.length === 0 && (
             <Card className="border-border bg-card">
               <CardContent className="py-12">
                 <div className="text-center text-muted-foreground">
@@ -115,8 +126,10 @@ export default async function NegotiationPage() {
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            <NegotiationClient chats={chats} />
+          )}
+
+          {!loading && !error && data && data.chats.length > 0 && (
+            <NegotiationClient chats={data.chats} />
           )}
         </div>
       </main>
