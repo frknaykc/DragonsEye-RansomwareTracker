@@ -13,6 +13,9 @@ const GROUP_LOGOS: Record<string, string> = {
   "blackshrantac": "blackshrantac-logo.png",
   "brotherhood": "brotherhoodlogo.png",
   "chaos": "chaos-favicon.svg",
+  "clop": "clop-logo.png",
+  "cl0p": "clop-logo.png", // Alias
+  "devman": "devman-title.png",
   "direwolf": "DireWolf.png",
   "dragonforce": "dragonforce.png",
   "everest": "everest-ransomware.png",
@@ -23,13 +26,23 @@ const GROUP_LOGOS: Record<string, string> = {
   "incransom": "incransom.png",
   "inc ransom": "incransom.png",
   "interlock": "interlock-ransomware.gif",
+  "lockbit": "lockbit.ico",
+  "lockbit3": "lockbit.ico",
+  "lockbit 3.0": "lockbit.ico",
+  "lockbit3.0": "lockbit.ico",
   "lynx": "lynx-ransomware.svg",
   "medusa": "medusa.png",
+  "medusalocker": "medusa.png", // Alias
+  "nightspire": "nightspire-fav.png",
   "qilin": "qilin-ransomware.png",
   "ransomhouse": "ransomhouse.png",
+  "ransom house": "ransomhouse.png",
   "rhysida": "rhysida.ico",
   "sicarii": "sicarilogo.png",
   "sinobi": "sinobi-ransomware.png",
+  "tooda": "tooda.png",
+  "trident": "tridentlogo.png",
+  "warlock": "warlocklogo.png",
 }
 
 // Get logo URL for a group
