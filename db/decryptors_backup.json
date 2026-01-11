@@ -1,0 +1,279 @@
+[
+  {
+    "id": "gandcrab-1",
+    "group_name": "gandcrab",
+    "decryptor_name": "GandCrab Decryptor",
+    "provider": "Bitdefender",
+    "provider_url": "https://www.bitdefender.com",
+    "download_url": "https://www.bitdefender.com/blog/labs/gandcrab-ransomware-decryption-tool-available-for-free/",
+    "description": "Free decryption tool for GandCrab ransomware versions 1, 4, 5.0.1 through 5.2",
+    "file_extensions": [
+      ".GDCB",
+      ".CRAB",
+      ".KRAB"
+    ],
+    "status": "active",
+    "release_date": "2019-06-17",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "revil-1",
+    "group_name": "revil",
+    "decryptor_name": "REvil/Sodinokibi Decryptor",
+    "provider": "Bitdefender",
+    "provider_url": "https://www.bitdefender.com",
+    "download_url": "https://www.bitdefender.com/blog/labs/bitdefender-offers-free-universal-decryptor-for-revil-sodinokibi-ransomware/",
+    "description": "Universal decryptor for REvil ransomware, works for infections before July 13, 2021",
+    "file_extensions": [
+      ".sodinokibi",
+      ".random"
+    ],
+    "status": "limited",
+    "release_date": "2021-09-16",
+    "notes": "Only works for infections before the Kaseya attack",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "babuk-1",
+    "group_name": "babuk",
+    "decryptor_name": "Babuk Decryptor",
+    "provider": "Avast",
+    "provider_url": "https://www.avast.com",
+    "download_url": "https://www.avast.com/ransomware-decryption-tools",
+    "description": "Decryption tool for Babuk ransomware after source code leak",
+    "file_extensions": [
+      ".babuk",
+      ".babyk"
+    ],
+    "status": "active",
+    "release_date": "2021-06-01",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "ragnarok-1",
+    "group_name": "ragnarok",
+    "decryptor_name": "Ragnarok Decryptor",
+    "provider": "Emsisoft",
+    "provider_url": "https://www.emsisoft.com",
+    "download_url": "https://www.emsisoft.com/ransomware-decryption/ragnarok",
+    "description": "Free decryptor released after group shutdown and key release",
+    "file_extensions": [
+      ".ragnarok",
+      ".ragnar"
+    ],
+    "status": "active",
+    "release_date": "2021-08-26",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "shade-1",
+    "group_name": "shade",
+    "decryptor_name": "Shade/Troldesh Decryptor",
+    "provider": "Kaspersky",
+    "provider_url": "https://www.kaspersky.com",
+    "download_url": "https://noransom.kaspersky.com/",
+    "description": "Decryption tool after group released 750,000 keys",
+    "file_extensions": [
+      ".xtbl",
+      ".shade",
+      ".crypted000007"
+    ],
+    "status": "active",
+    "release_date": "2020-04-28",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "fonix-1",
+    "group_name": "fonix",
+    "decryptor_name": "Fonix Decryptor",
+    "provider": "Kaspersky",
+    "provider_url": "https://www.kaspersky.com",
+    "download_url": "https://noransom.kaspersky.com/",
+    "description": "Decryptor available after group shutdown",
+    "file_extensions": [
+      ".FONIX",
+      ".XINOF"
+    ],
+    "status": "active",
+    "release_date": "2021-02-05",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "synack-1",
+    "group_name": "synack",
+    "decryptor_name": "SynAck Decryptor",
+    "provider": "Emsisoft",
+    "provider_url": "https://www.emsisoft.com",
+    "download_url": "https://www.emsisoft.com/ransomware-decryption/synack",
+    "description": "Decryption tool after El_Cometa rebranding and key release",
+    "file_extensions": [
+      ".synack"
+    ],
+    "status": "active",
+    "release_date": "2021-08-13",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "avaddon-1",
+    "group_name": "avaddon",
+    "decryptor_name": "Avaddon Decryptor",
+    "provider": "Emsisoft",
+    "provider_url": "https://www.emsisoft.com",
+    "download_url": "https://www.emsisoft.com/ransomware-decryption/avaddon",
+    "description": "Free decryptor after group shutdown and key release",
+    "file_extensions": [
+      ".avdn"
+    ],
+    "status": "active",
+    "release_date": "2021-06-14",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "hive-1",
+    "group_name": "hive",
+    "decryptor_name": "Hive Decryptor",
+    "provider": "FBI/Europol",
+    "provider_url": "https://www.nomoreransom.org",
+    "download_url": "https://www.nomoreransom.org/en/decryption-tools.html",
+    "description": "Decryptor released after law enforcement takedown",
+    "file_extensions": [
+      ".hive",
+      ".key.hive"
+    ],
+    "status": "active",
+    "release_date": "2023-01-26",
+    "notes": "Result of FBI operation that infiltrated Hive servers",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "maze-1",
+    "group_name": "maze",
+    "decryptor_name": "Maze/Egregor Decryptor",
+    "provider": "Emsisoft",
+    "provider_url": "https://www.emsisoft.com",
+    "download_url": "https://www.emsisoft.com/ransomware-decryption/maze-sekhmet-egregor",
+    "description": "Decryptor for Maze, Sekhmet, and Egregor after master key leak",
+    "file_extensions": [
+      ".maze",
+      ".egregor"
+    ],
+    "status": "active",
+    "release_date": "2022-02-09",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "conti-1",
+    "group_name": "conti",
+    "decryptor_name": "Conti Decryptor",
+    "provider": "Kaspersky",
+    "provider_url": "https://www.kaspersky.com",
+    "download_url": "https://noransom.kaspersky.com/",
+    "description": "Partial decryption after source code and key leaks",
+    "file_extensions": [
+      ".CONTI",
+      ".YZQDE"
+    ],
+    "status": "limited",
+    "release_date": "2022-03-20",
+    "notes": "Only works for some variants after source code leak",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "prometheus-1",
+    "group_name": "prometheus",
+    "decryptor_name": "Prometheus Decryptor",
+    "provider": "Emsisoft",
+    "provider_url": "https://www.emsisoft.com",
+    "download_url": "https://www.emsisoft.com/ransomware-decryption/prometheus",
+    "description": "Decryption tool for Prometheus ransomware",
+    "file_extensions": [
+      ".PROM",
+      ".prometheus"
+    ],
+    "status": "active",
+    "release_date": "2021-07-15",
+    "notes": "",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "839a11f0",
+    "group_name": "777 ransom",
+    "decryptor_name": "Trend Micro Ransomware Decryptor",
+    "provider": "Trend Micro",
+    "provider_url": "https://www.trendmicro.com/",
+    "download_url": "https://powerbox-na-file.trend.org/SFDC/DownloadFile_iv.php?jsonInfo=%7b%22Query%22%3a%22jn1XVHnvtwlVGuZ9XTrPudWOVgKHfE1fVf4mh9XXETPsT4jEX1DzaXiIio6niXlTxEHkXvbf%2fag68Dmuv%2fz0adD%2f3a4rmG1FhFP7q1cJhqLLyvO8VuBr65fUerKjrrzMQWzRT86MuUneIx7%2b%2bi8LufENTYCTK1vakiJw0ij34qulyJRwqAHlBbxuMm5Zy%2b5BmueD%2bfAyd%2bJceSs3oSW6q3VL9gl11LWas2jPQvUCZM9D9UDepgprqnQtF%2fU7D7%2bon%2b3OSp8OdBwED8qp9RgXb53hqzal2kXNlyntYczTaOo%3d%22%2c%22iv%22%3a%22db0d918f007fe97830d4cbc2e44b4cd2%22%7d",
+    "description": "Trend Micro Ransomware Decryptor is designed to decrypt files encrypted by 777 Ransom.\n",
+    "detailed_description": "Trend Micro Ransomware File Decryptor User Guide\n\n1. General Information\n\nThis tool is provided by Trend Micro to attempt recovery of files encrypted by certain types of ransomware. There is no guarantee of successful decryption for every ransomware variant; in some cases, only partial recovery may be possible.\n\nThe most effective protection against ransomware includes:\n\t\u2022\tPerforming regular backups\n\t\u2022\tKeeping the operating system and applications up to date\n\t\u2022\tUsing an up-to-date security solution\n\n\u2e3b\n\n2. Supported Ransomware Types\n\nThe tool supports CryptXXX (V1\u2013V5), TeslaCrypt (V1\u2013V4), CERBER V1, Locky, Jigsaw, Nemucod, Chimera, XORIST, BadBlock, and several other ransomware families listed in the documentation.\nNote: For TeslaCrypt V1 and V2, it may be necessary to contact Trend Micro Technical Support separately.\n\n\u2e3b\n\n3. Downloading and Running the Tool\n\t1.\tDownload the Trend Micro Ransomware File Decryptor from the official Trend Micro website.\n\t2.\tExtract the ZIP file.\n\t3.\tRun the RansomwareFileDecryptor.exe file.\n\t4.\tAccept the End User License Agreement (EULA).\n\n\u2e3b\n\n4. Step-by-Step Usage\n\nStep 1: Select the Ransomware Type\n\t\u2022\tIf you know the ransomware type from the ransom note left on the system, select it from the list.\n\t\u2022\tIf you are unsure, you can select the \u201cI don\u2019t know the ransomware name\u201d option. In this case, the tool will attempt to automatically identify the ransomware based on the file signature.\n\nStep 2: Select the Encrypted File or Folder\n\t\u2022\tYou can select a single file or an entire folder (including subfolders).\n\t\u2022\tClick the \u201cSelect & Decrypt\u201d button to make your selection.\n\nStep 3: Start the Decryption Process\n\t\u2022\tThe tool will automatically begin scanning and decrypting files.\n\t\u2022\tThe duration of the process may vary depending on the number of files and the ransomware type.\n\t\u2022\tIf needed, the process can be stopped by clicking the \u201cStop\u201d button.\n\nStep 4: Cases Requiring Additional Information (Optional)\n\t\u2022\tFor certain ransomware types such as CryptXXX V1, XORIST, XORBAT, or Nemucod, the tool may request additional information.\n\t\u2022\tIn this case:\n\t\u2022\tSelect an encrypted file\n\t\u2022\tSelect the same file in its unencrypted form (from a backup, if available)\n\t\u2022\tLarger file sizes are preferred\n\nStep 5: Completing the Process\n\t\u2022\tOnce the process is completed, the results screen will be displayed.\n\t\u2022\tBy selecting \u201cSee encrypted files,\u201d the folder containing the files will be opened.\n\t\u2022\tDecrypted files will be located in the same folder.\n\t\u2022\tClick \u201cDone\u201d to return to the main screen.\n\n\u2e3b\n\n5. Important Notes\n\t\u2022\tFor CryptXXX V3, it may not be possible to fully recover all files.\n\t\u2022\tIf files were encrypted without changing their original names, decrypted files will be saved with a \u201cdecrypted\u201d suffix.\n\t\u2022\tSuccessful decryption is not guaranteed for every file.",
+    "file_extensions": [
+      "{Original file name}.777"
+    ],
+    "status": "active",
+    "release_date": "",
+    "notes": "",
+    "how_to_guide_url": "https://www.nomoreransom.org/uploads/TrendMicro_how-to_guide.pdf",
+    "created_at": "2026-01-06T10:25:04.247431",
+    "updated_at": "2026-01-06T10:28:58.691617"
+  },
+  {
+    "id": "3b4987d7",
+    "group_name": "aes_ni ransom",
+    "decryptor_name": "Rakhni Decryptor",
+    "provider": "Kaspersky Lab",
+    "provider_url": "https://www.kaspersky.com",
+    "download_url": "https://media.kaspersky.com/utilities/VirusUtilities/EN/rakhnidecryptor.zip",
+    "description": "RakhniDecryptor is a tool provided by Kaspersky to decrypt files encrypted by Trojan-Ransom.Win32.Rakhni.",
+    "detailed_description": "RakhniDecryptor is a tool provided by Kaspersky to decrypt files encrypted by Trojan-Ransom.Win32.Rakhni.\n\nBefore using the tool, the ransomware must be completely removed from the system. Otherwise, files may be re-encrypted during or after the decryption process.\n\nThe ransomware creates a file named exit.hhr.oshit, which contains encrypted password data required for faster decryption.\nIf this file is still present on the system, decryption will be quicker. If it was deleted, it can be recovered using file recovery tools and placed back into the %APPDATA% directory.\n\nSupported Encrypted File Extensions\n\t\u2022\t.locked\n\t\u2022\t.kraken\n\t\u2022\t.darkness\n\nDecryption Process (High Level)\n\t1.\tDownload and run RakhniDecryptor.exe on the infected system.\n\t2.\tConfigure scan parameters (hard drives, removable drives, network drives).\n\t3.\tStart the scan and select one encrypted file when prompted.\n\t4.\tThe tool attempts to recover the encryption password and decrypt files.\n\nImportant Notes\n\t\u2022\tPassword recovery may take a long time (up to several days).\n\t\u2022\tThe system should not be shut down and the tool should not be closed during decryption.\n\t\u2022\tSuccessful decryption is not guaranteed for all files and depends on file integrity and available data.",
+    "file_extensions": [
+      ".locked",
+      ".kraken",
+      ".darkness"
+    ],
+    "status": "active",
+    "release_date": "",
+    "notes": "",
+    "how_to_guide_url": "https://www.nomoreransom.org/uploads/RakhniDecryptor_how-to_guide.pdf",
+    "created_at": "2026-01-06T10:33:02.548859",
+    "updated_at": "2026-01-06T10:34:37.048912"
+  },
+  {
+    "id": "fdafcd72",
+    "group_name": "aes_ni ransom",
+    "decryptor_name": "AES_NI Decryptor",
+    "provider": "Avast",
+    "provider_url": "https://www.avast.com/",
+    "download_url": "",
+    "description": "AES_NI Decryptor is designed to decrypt files encrypted by AES_NI Ransom.\n\n",
+    "detailed_description": "Avast Ransomware Decryption Tools are standalone utilities designed to decrypt files encrypted by specific ransomware families (for example: Globe). Each ransomware family requires its own dedicated decryptor executable.\n\nBefore starting the decryption process, it is strongly recommended to ensure that the ransomware malware has been fully removed from the system.\n\n\u2e3b\n\nDecryption Process (High Level)\n\t1.\tDownload the appropriate decryptor file (for example: avast_decryptor_globe.exe) and run it.\n\t2.\tIf Windows SmartScreen appears, select More info and then Run anyway.\n\t3.\tFollow the wizard and select the files, folders, or drives to decrypt.\n\t4.\tIf required, provide:\n\t\u2022\tOne encrypted file\n\t\u2022\tThe same file in its original, unencrypted form (from a backup or trusted source)\n\t5.\tIf password cracking is needed, the tool will attempt to recover the encryption password.\n\t6.\tStart the decryption process and wait until completion.\n\n\u2e3b\n\nSupported File Extensions\n\nSupported extensions depend on the specific ransomware family targeted by the decryptor. The extensions are typically ransomware-added suffixes (for example, Globe variants such as .decrypt2017), not original file types.\n\n\u2e3b\n\nImportant Notes\n\t\u2022\tPassword cracking may consume significant system resources and take a long time.\n\t\u2022\tThe original and encrypted versions of a file may be required for successful decryption.\n\t\u2022\tRunning the decryptor with administrator privileges is recommended.\n\t\u2022\tSuccessful decryption is not guaranteed for all files and depends on ransomware variant and file integrity.\n\t\u2022\tBacking up encrypted files before decryption is strongly advised.\n",
+    "file_extensions": [
+      ".decrypt2017"
+    ],
+    "status": "active",
+    "release_date": "",
+    "notes": "",
+    "how_to_guide_type": "pdf",
+    "how_to_guide_url": "http://172.16.20.24:8000/api/v1/uploads/87fc83f3_Avast_how-to-guide.pdf",
+    "how_to_guide_text": "",
+    "created_at": "2026-01-06T11:30:05.323375",
+    "updated_at": "2026-01-06T11:30:05.323388"
+  }
+]

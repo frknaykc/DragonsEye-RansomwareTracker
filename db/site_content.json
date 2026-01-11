@@ -1,0 +1,61 @@
+{
+  "about": {
+    "hero_title": "Dragons Eye",
+    "hero_subtitle": "Ransomware Tracker",
+    "hero_description": "Dragons Community's advanced threat intelligence platform for ransomware monitoring",
+    "main_description": "Dragons Eye is a comprehensive threat intelligence suite developed by Dragons Community. The Ransomware Tracker module monitors, tracks, and analyzes ransomware leak sites across the dark web. This platform is exclusively built for Dragons Community members to enhance their cybersecurity research and threat hunting capabilities.",
+    "secondary_description": "By aggregating real-time data from ransomware operators' leak sites and enriching it with AI-powered analysis, Dragons Eye empowers security professionals to stay ahead of emerging threats, identify attack patterns, and protect organizations from ransomware campaigns.",
+    "community_description": "Dragons Community is a private, invitation-only community of cybersecurity professionals, threat researchers, red teamers, and security enthusiasts. Founded with the mission of fostering collaboration and knowledge sharing in the cybersecurity field.",
+    "contact_email": "support@dragons.community",
+    "security_email": "support@dragons.community",
+    "partners_email": "support@dragons.community",
+    "website_url": "https://dragons.community",
+    "twitter_url": "https://x.com/DragonsCyberHQ",
+    "github_url": "https://github.com/Dragons-Community"
+  },
+  "dashboard_widgets": [
+    {
+      "id": "stats_overview",
+      "type": "stats",
+      "title": "Overview Statistics",
+      "enabled": true,
+      "order": 1
+    },
+    {
+      "id": "recent_victims",
+      "type": "list",
+      "title": "Latest Victims",
+      "enabled": true,
+      "order": 2
+    },
+    {
+      "id": "activity_chart",
+      "type": "chart",
+      "title": "Activity Over Time",
+      "enabled": true,
+      "order": 3
+    },
+    {
+      "id": "top_groups",
+      "type": "chart",
+      "title": "Top Threat Groups",
+      "enabled": true,
+      "order": 4
+    },
+    {
+      "id": "country_map",
+      "type": "map",
+      "title": "Geographic Distribution",
+      "enabled": true,
+      "order": 5
+    },
+    {
+      "id": "sector_distribution",
+      "type": "chart",
+      "title": "Sector Distribution",
+      "enabled": true,
+      "order": 6
+    }
+  ]
+}
+

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for dragon flame effect -->
+    <linearGradient id="flameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F7931E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for dragon body -->
+    <linearGradient id="dragonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f3460;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Text shadow -->
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="200" fill="#0a0a0f"/>
+  
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1a2e" stroke-width="0.5"/>
+  </pattern>
+  <rect width="800" height="200" fill="url(#grid)" opacity="0.3"/>
+  
+  <!-- Dragon Icon - Stylized Dragon Head -->
+  <g transform="translate(30, 30)" filter="url(#glow)">
+    <!-- Dragon head outline -->
+    <path d="M 80 70 
+             Q 100 20 140 30
+             Q 160 10 170 40
+             Q 180 35 175 55
+             Q 190 50 180 70
+             L 160 75
+             Q 155 65 145 68
+             L 130 80
+             Q 120 95 100 100
+             Q 70 105 60 90
+             Q 50 80 60 70
+             Z" 
+          fill="url(#dragonGradient)" 
+          stroke="url(#flameGradient)" 
+          stroke-width="2"/>
+    
+    <!-- Dragon eye -->
+    <ellipse cx="130" cy="55" rx="8" ry="10" fill="#FF6B35"/>
+    <ellipse cx="132" cy="55" rx="3" ry="6" fill="#0a0a0f"/>
+    
+    <!-- Dragon nostril flame -->
+    <path d="M 170 68 Q 185 60 195 45 Q 188 55 180 58 Q 190 48 200 35 Q 185 50 175 55" 
+          fill="url(#flameGradient)" opacity="0.9"/>
+    
+    <!-- Dragon horn/spike -->
+    <path d="M 145 30 L 155 5 L 160 35" fill="url(#flameGradient)" opacity="0.8"/>
+    <path d="M 125 35 L 130 15 L 138 38" fill="url(#flameGradient)" opacity="0.6"/>
+    
+    <!-- Scale details -->
+    <circle cx="100" cy="75" r="4" fill="none" stroke="url(#flameGradient)" stroke-width="1" opacity="0.4"/>
+    <circle cx="110" cy="85" r="3" fill="none" stroke="url(#flameGradient)" stroke-width="1" opacity="0.4"/>
+    <circle cx="85" cy="80" r="3" fill="none" stroke="url(#flameGradient)" stroke-width="1" opacity="0.4"/>
+  </g>
+  
+  <!-- Main Title -->
+  <text x="240" y="90" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="52" font-weight="700" fill="url(#flameGradient)" filter="url(#textShadow)">
+    Dragons
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="240" y="135" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="24" font-weight="300" fill="#94a3b8" letter-spacing="4">
+    RANSOMWARE MONITORING
+  </text>
+  
+  <!-- Tagline -->
+  <text x="240" y="165" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="12" fill="#64748b" letter-spacing="2">
+    THREAT INTELLIGENCE • LEAK SITE TRACKING • REAL-TIME ALERTS
+  </text>
+  
+  <!-- Decorative line -->
+  <line x1="240" y1="145" x2="750" y2="145" stroke="url(#flameGradient)" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Version badge -->
+  <rect x="700" y="70" width="60" height="22" rx="11" fill="url(#flameGradient)" opacity="0.2"/>
+  <text x="730" y="85" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="10" fill="url(#flameGradient)" text-anchor="middle">v2.0</text>
+</svg>
+
