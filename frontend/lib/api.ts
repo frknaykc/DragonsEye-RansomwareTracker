@@ -3,21 +3,28 @@
  * TypeScript API client for interacting with the backend
  */
 
-// Dynamic API URL - uses same hostname as frontend but port 8000
+// Dynamic API URL - Production API endpoint
 function getApiBaseUrl(): string {
-  // Environment variable override
+  // Environment variable override (set in Vercel)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Client-side - use same hostname as browser
+  // Production fallback - hardcoded API URL
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:8000`;
+    // If on production domain, use production API
+    if (window.location.hostname.includes('dragons.community') || 
+        window.location.hostname.includes('vercel.app')) {
+      return 'https://ransomwareapi.dragons.community';
+    }
+    // Local development
+    return `http://${window.location.hostname}:8000`;
   }
   
-  // Server-side - try to get from headers or fallback
-  return 'http://localhost:8000';
+  // Server-side fallback
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://ransomwareapi.dragons.community'
+    : 'http://localhost:8000';
 }
 
 // ============================================================================
