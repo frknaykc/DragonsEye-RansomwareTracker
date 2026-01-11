@@ -11,6 +11,8 @@ import subprocess
 import sys
 import threading
 import time
+import base64
+import io
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -27,6 +29,15 @@ import secrets
 import hashlib
 from pydantic import BaseModel
 import uvicorn
+
+# TOTP (Two-Factor Authentication)
+try:
+    import pyotp
+    import qrcode
+    TOTP_AVAILABLE = True
+except ImportError:
+    TOTP_AVAILABLE = False
+    print("⚠️ pyotp/qrcode not installed. TOTP disabled. Install with: pip install pyotp qrcode[pil]")
 
 # ============================================================================
 # Configuration
@@ -60,6 +71,134 @@ ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", 
     hashlib.sha256("dragons2024!".encode()).hexdigest()  # Default for development only!
 )
+
+# TOTP Configuration
+TOTP_SECRET = os.environ.get("TOTP_SECRET", "")  # Base32 encoded secret
+TOTP_ENABLED = os.environ.get("TOTP_ENABLED", "false").lower() == "true"
+TOTP_ISSUER = "DragonsEye"
+
+# Analytics Configuration
+ANALYTICS_FILE = DB_DIR / "analytics.json"
+ANALYTICS_ENABLED = os.environ.get("ANALYTICS_ENABLED", "true").lower() == "true"
+
+# In-memory analytics cache (persisted periodically)
+_analytics_data: Dict[str, Any] = {
+    "total_requests": 0,
+    "unique_ips": set(),
+    "page_views": Counter(),
+    "api_calls": Counter(),
+    "hourly_traffic": Counter(),
+    "daily_traffic": Counter(),
+    "country_stats": Counter(),
+    "user_agents": Counter(),
+    "referrers": Counter(),
+    "last_visitors": [],  # Last 100 visitors
+    "started_at": datetime.now().isoformat()
+}
+_analytics_lock = threading.Lock()
+
+def load_analytics():
+    """Load analytics data from file"""
+    global _analytics_data
+    if ANALYTICS_FILE.exists():
+        try:
+            with open(ANALYTICS_FILE, 'r') as f:
+                data = json.load(f)
+                _analytics_data["total_requests"] = data.get("total_requests", 0)
+                _analytics_data["unique_ips"] = set(data.get("unique_ips", []))
+                _analytics_data["page_views"] = Counter(data.get("page_views", {}))
+                _analytics_data["api_calls"] = Counter(data.get("api_calls", {}))
+                _analytics_data["hourly_traffic"] = Counter(data.get("hourly_traffic", {}))
+                _analytics_data["daily_traffic"] = Counter(data.get("daily_traffic", {}))
+                _analytics_data["user_agents"] = Counter(data.get("user_agents", {}))
+                _analytics_data["referrers"] = Counter(data.get("referrers", {}))
+                _analytics_data["last_visitors"] = data.get("last_visitors", [])[-100:]
+                _analytics_data["started_at"] = data.get("started_at", datetime.now().isoformat())
+        except Exception as e:
+            print(f"⚠️ Failed to load analytics: {e}")
+
+def save_analytics():
+    """Save analytics data to file"""
+    with _analytics_lock:
+        try:
+            data = {
+                "total_requests": _analytics_data["total_requests"],
+                "unique_ips": list(_analytics_data["unique_ips"]),
+                "page_views": dict(_analytics_data["page_views"]),
+                "api_calls": dict(_analytics_data["api_calls"]),
+                "hourly_traffic": dict(_analytics_data["hourly_traffic"]),
+                "daily_traffic": dict(_analytics_data["daily_traffic"]),
+                "user_agents": dict(_analytics_data["user_agents"]),
+                "referrers": dict(_analytics_data["referrers"]),
+                "last_visitors": _analytics_data["last_visitors"][-100:],
+                "started_at": _analytics_data["started_at"],
+                "last_saved": datetime.now().isoformat()
+            }
+            with open(ANALYTICS_FILE, 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"⚠️ Failed to save analytics: {e}")
+
+def track_request(request: Request):
+    """Track incoming request for analytics"""
+    if not ANALYTICS_ENABLED:
+        return
+    
+    with _analytics_lock:
+        now = datetime.now()
+        client_ip = request.client.host if request.client else "unknown"
+        path = request.url.path
+        user_agent = request.headers.get("user-agent", "unknown")[:100]
+        referrer = request.headers.get("referer", "direct")[:200]
+        
+        # Update counters
+        _analytics_data["total_requests"] += 1
+        _analytics_data["unique_ips"].add(client_ip)
+        
+        # Track page views vs API calls
+        if path.startswith("/api/"):
+            _analytics_data["api_calls"][path] += 1
+        else:
+            _analytics_data["page_views"][path] += 1
+        
+        # Hourly and daily traffic
+        hour_key = now.strftime("%Y-%m-%d %H:00")
+        day_key = now.strftime("%Y-%m-%d")
+        _analytics_data["hourly_traffic"][hour_key] += 1
+        _analytics_data["daily_traffic"][day_key] += 1
+        
+        # User agents (simplified)
+        ua_simple = "bot" if any(b in user_agent.lower() for b in ["bot", "crawler", "spider"]) else "browser"
+        _analytics_data["user_agents"][ua_simple] += 1
+        
+        # Referrers
+        if referrer != "direct":
+            try:
+                from urllib.parse import urlparse
+                ref_domain = urlparse(referrer).netloc or "direct"
+                _analytics_data["referrers"][ref_domain] += 1
+            except:
+                _analytics_data["referrers"]["unknown"] += 1
+        else:
+            _analytics_data["referrers"]["direct"] += 1
+        
+        # Last visitors (keep last 100)
+        visitor_info = {
+            "ip": client_ip[:20],  # Truncate for privacy
+            "path": path,
+            "time": now.isoformat(),
+            "ua": ua_simple
+        }
+        _analytics_data["last_visitors"].append(visitor_info)
+        if len(_analytics_data["last_visitors"]) > 100:
+            _analytics_data["last_visitors"] = _analytics_data["last_visitors"][-100:]
+        
+        # Save every 100 requests
+        if _analytics_data["total_requests"] % 100 == 0:
+            save_analytics()
+
+# Load analytics on startup
+load_analytics()
 
 # Rate limiting (simple in-memory implementation)
 _request_counts: Dict[str, List[float]] = {}
@@ -154,12 +293,12 @@ def auto_update_scheduler():
         if _update_in_progress:
             print("⏳ Scheduled update skipped - update already in progress")
         else:
-            # Trigger update
-            print(f"🔄 Scheduled update starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            try:
-                run_update_background()
-            except Exception as e:
-                print(f"❌ Scheduled update failed: {e}")
+        # Trigger update
+        print(f"🔄 Scheduled update starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        try:
+            run_update_background()
+        except Exception as e:
+            print(f"❌ Scheduled update failed: {e}")
         
         # Wait for the interval
         for _ in range(UPDATE_INTERVAL_MINUTES * 60):  # Check every second
@@ -331,6 +470,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Analytics Middleware
+class AnalyticsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Track request before processing
+        if ANALYTICS_ENABLED:
+            track_request(request)
+        response = await call_next(request)
+        return response
+
+app.add_middleware(AnalyticsMiddleware)
+
 # ============================================================================
 # Health Check
 # ============================================================================
@@ -363,25 +513,272 @@ async def health_check():
 # Authentication
 # ============================================================================
 
+# Pydantic models for auth
+class OTPVerifyRequest(BaseModel):
+    otp_code: str
+
+class LoginResponse(BaseModel):
+    success: bool
+    message: str
+    requires_otp: bool = False
+    token: Optional[str] = None
+    expires_in: Optional[int] = None
+
+# Session storage for pending OTP verifications
+_pending_otp_sessions: Dict[str, Dict[str, Any]] = {}
+
 @app.post("/api/v1/auth/login", tags=["Auth"])
 async def admin_login(credentials: HTTPBasicCredentials = Depends(security)):
-    """Verify admin credentials and return a session token"""
+    """Verify admin credentials and optionally require OTP"""
     verify_admin(credentials)  # Will raise 401 if invalid
     
-    # Generate a simple session token (in production, use JWT or similar)
+    # Check if TOTP is enabled
+    if TOTP_ENABLED and TOTP_SECRET and TOTP_AVAILABLE:
+        # Generate a temporary session for OTP verification
+        temp_token = secrets.token_urlsafe(32)
+        _pending_otp_sessions[temp_token] = {
+            "username": credentials.username,
+            "created_at": datetime.now(),
+            "verified": False
+        }
+        
+        # Clean old pending sessions (older than 5 minutes)
+        cutoff = datetime.now() - timedelta(minutes=5)
+        expired = [k for k, v in _pending_otp_sessions.items() if v["created_at"] < cutoff]
+        for k in expired:
+            del _pending_otp_sessions[k]
+        
+        return {
+            "success": True,
+            "message": "Password verified. OTP required.",
+            "requires_otp": True,
+            "temp_token": temp_token
+        }
+    
+    # No OTP required - generate final session token
+    session_token = secrets.token_urlsafe(32)
+    
+    return {
+        "success": True,
+        "message": "Authentication successful",
+        "requires_otp": False,
+        "token": session_token,
+        "expires_in": 3600  # 1 hour
+    }
+
+@app.post("/api/v1/auth/verify-otp", tags=["Auth"])
+async def verify_otp(temp_token: str = Query(...), otp_code: str = Query(...)):
+    """Verify OTP code after password authentication"""
+    if not TOTP_ENABLED or not TOTP_SECRET:
+        raise HTTPException(status_code=400, detail="OTP is not enabled")
+    
+    if not TOTP_AVAILABLE:
+        raise HTTPException(status_code=500, detail="TOTP library not installed")
+    
+    # Check if temp token exists
+    if temp_token not in _pending_otp_sessions:
+        raise HTTPException(status_code=401, detail="Invalid or expired session. Please login again.")
+    
+    session = _pending_otp_sessions[temp_token]
+    
+    # Check if session is expired (5 minutes)
+    if datetime.now() - session["created_at"] > timedelta(minutes=5):
+        del _pending_otp_sessions[temp_token]
+        raise HTTPException(status_code=401, detail="OTP session expired. Please login again.")
+    
+    # Verify OTP
+    totp = pyotp.TOTP(TOTP_SECRET)
+    if not totp.verify(otp_code, valid_window=1):  # Allow 30 second window
+        raise HTTPException(status_code=401, detail="Invalid OTP code")
+    
+    # OTP verified - generate final session token
+    del _pending_otp_sessions[temp_token]
     session_token = secrets.token_urlsafe(32)
     
     return {
         "success": True,
         "message": "Authentication successful",
         "token": session_token,
-        "expires_in": 3600  # 1 hour
+        "expires_in": 3600
+    }
+
+@app.get("/api/v1/auth/otp-setup", tags=["Auth"])
+async def get_otp_setup(authenticated: bool = Depends(verify_admin)):
+    """Get OTP setup information (QR code) - requires admin auth"""
+    if not TOTP_AVAILABLE:
+        raise HTTPException(status_code=500, detail="TOTP library not installed. Run: pip install pyotp qrcode[pil]")
+    
+    # Generate new secret if not set
+    secret = TOTP_SECRET if TOTP_SECRET else pyotp.random_base32()
+    
+    totp = pyotp.TOTP(secret)
+    provisioning_uri = totp.provisioning_uri(
+        name=ADMIN_USERNAME,
+        issuer_name=TOTP_ISSUER
+    )
+    
+    # Generate QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(provisioning_uri)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return {
+        "secret": secret,
+        "provisioning_uri": provisioning_uri,
+        "qr_code": f"data:image/png;base64,{qr_base64}",
+        "issuer": TOTP_ISSUER,
+        "account": ADMIN_USERNAME,
+        "instructions": [
+            "1. Install Google Authenticator or similar app",
+            "2. Scan the QR code or enter the secret manually",
+            "3. Add TOTP_SECRET and TOTP_ENABLED=true to your .env file",
+            "4. Restart the API server"
+        ],
+        "env_config": f"TOTP_SECRET={secret}\nTOTP_ENABLED=true"
+    }
+
+@app.get("/api/v1/auth/status", tags=["Auth"])
+async def get_auth_status():
+    """Get authentication configuration status"""
+    return {
+        "totp_enabled": TOTP_ENABLED,
+        "totp_configured": bool(TOTP_SECRET),
+        "totp_available": TOTP_AVAILABLE,
+        "analytics_enabled": ANALYTICS_ENABLED
     }
 
 @app.get("/api/v1/auth/verify", tags=["Auth"])
 async def verify_auth(authenticated: bool = Depends(verify_admin)):
     """Verify current authentication status"""
     return {"authenticated": True, "message": "Valid credentials"}
+
+# ============================================================================
+# Analytics Endpoints
+# ============================================================================
+
+@app.get("/api/v1/analytics/summary", tags=["Analytics"])
+async def get_analytics_summary(authenticated: bool = Depends(verify_admin)):
+    """Get analytics summary - requires admin auth"""
+    with _analytics_lock:
+        # Calculate time-based stats
+        now = datetime.now()
+        today = now.strftime("%Y-%m-%d")
+        this_hour = now.strftime("%Y-%m-%d %H:00")
+        
+        # Get last 24 hours traffic
+        last_24h_traffic = sum(
+            count for hour, count in _analytics_data["hourly_traffic"].items()
+            if hour >= (now - timedelta(hours=24)).strftime("%Y-%m-%d %H:00")
+        )
+        
+        # Get last 7 days traffic
+        last_7d_traffic = sum(
+            count for day, count in _analytics_data["daily_traffic"].items()
+            if day >= (now - timedelta(days=7)).strftime("%Y-%m-%d")
+        )
+        
+        return {
+            "total_requests": _analytics_data["total_requests"],
+            "unique_visitors": len(_analytics_data["unique_ips"]),
+            "today_requests": _analytics_data["daily_traffic"].get(today, 0),
+            "this_hour_requests": _analytics_data["hourly_traffic"].get(this_hour, 0),
+            "last_24h_requests": last_24h_traffic,
+            "last_7d_requests": last_7d_traffic,
+            "top_pages": dict(_analytics_data["page_views"].most_common(10)),
+            "top_api_endpoints": dict(_analytics_data["api_calls"].most_common(10)),
+            "user_agent_breakdown": dict(_analytics_data["user_agents"]),
+            "top_referrers": dict(_analytics_data["referrers"].most_common(10)),
+            "tracking_since": _analytics_data["started_at"]
+        }
+
+@app.get("/api/v1/analytics/traffic", tags=["Analytics"])
+async def get_traffic_data(
+    period: str = Query("24h", description="Period: 24h, 7d, 30d"),
+    authenticated: bool = Depends(verify_admin)
+):
+    """Get traffic data for charts - requires admin auth"""
+    now = datetime.now()
+    
+    with _analytics_lock:
+        if period == "24h":
+            # Hourly data for last 24 hours
+            data = {}
+            for i in range(24):
+                hour = (now - timedelta(hours=i)).strftime("%Y-%m-%d %H:00")
+                data[hour] = _analytics_data["hourly_traffic"].get(hour, 0)
+            return {"period": "24h", "granularity": "hourly", "data": dict(sorted(data.items()))}
+        
+        elif period == "7d":
+            # Daily data for last 7 days
+            data = {}
+            for i in range(7):
+                day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+                data[day] = _analytics_data["daily_traffic"].get(day, 0)
+            return {"period": "7d", "granularity": "daily", "data": dict(sorted(data.items()))}
+        
+        elif period == "30d":
+            # Daily data for last 30 days
+            data = {}
+            for i in range(30):
+                day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+                data[day] = _analytics_data["daily_traffic"].get(day, 0)
+            return {"period": "30d", "granularity": "daily", "data": dict(sorted(data.items()))}
+        
+        else:
+            raise HTTPException(status_code=400, detail="Invalid period. Use: 24h, 7d, 30d")
+
+@app.get("/api/v1/analytics/visitors", tags=["Analytics"])
+async def get_recent_visitors(
+    limit: int = Query(50, ge=1, le=100),
+    authenticated: bool = Depends(verify_admin)
+):
+    """Get recent visitors - requires admin auth"""
+    with _analytics_lock:
+        visitors = _analytics_data["last_visitors"][-limit:]
+        visitors.reverse()  # Most recent first
+        return {
+            "visitors": visitors,
+            "total_unique_ips": len(_analytics_data["unique_ips"])
+        }
+
+@app.get("/api/v1/analytics/endpoints", tags=["Analytics"])
+async def get_endpoint_stats(authenticated: bool = Depends(verify_admin)):
+    """Get detailed endpoint statistics - requires admin auth"""
+    with _analytics_lock:
+        return {
+            "page_views": dict(_analytics_data["page_views"].most_common(50)),
+            "api_calls": dict(_analytics_data["api_calls"].most_common(50)),
+            "total_page_views": sum(_analytics_data["page_views"].values()),
+            "total_api_calls": sum(_analytics_data["api_calls"].values())
+        }
+
+@app.post("/api/v1/analytics/reset", tags=["Analytics"])
+async def reset_analytics(authenticated: bool = Depends(verify_admin)):
+    """Reset all analytics data - requires admin auth"""
+    global _analytics_data
+    with _analytics_lock:
+        _analytics_data = {
+            "total_requests": 0,
+            "unique_ips": set(),
+            "page_views": Counter(),
+            "api_calls": Counter(),
+            "hourly_traffic": Counter(),
+            "daily_traffic": Counter(),
+            "country_stats": Counter(),
+            "user_agents": Counter(),
+            "referrers": Counter(),
+            "last_visitors": [],
+            "started_at": datetime.now().isoformat()
+        }
+        save_analytics()
+    return {"success": True, "message": "Analytics data reset"}
 
 # ============================================================================
 # Data Status & Update Endpoints
@@ -487,30 +884,30 @@ def run_update_background():
             log_file.flush()
             
             try:
-                result = subprocess.run(
-                    [sys.executable, str(scrape_script), "-V"],
-                    cwd=str(BIN_DIR),
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    text=True,
+            result = subprocess.run(
+                [sys.executable, str(scrape_script), "-V"],
+                cwd=str(BIN_DIR),
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                text=True,
                     timeout=SCRAPE_TIMEOUT_SECONDS  # 30 minutes max
-                )
-                scrape_success = result.returncode == 0
-                log_file.write(f"\n[SCRAPE] Finished with return code: {result.returncode}\n")
-                if not scrape_success:
+            )
+            scrape_success = result.returncode == 0
+            log_file.write(f"\n[SCRAPE] Finished with return code: {result.returncode}\n")
+            if not scrape_success:
                     log_file.write(f"[SCRAPE] FAILED - but will still try parse (partial data may exist)\n\n")
-                else:
-                    log_file.write(f"[SCRAPE] OK - proceeding to parse\n\n")
+            else:
+                log_file.write(f"[SCRAPE] OK - proceeding to parse\n\n")
             except subprocess.TimeoutExpired:
                 log_file.write(f"\n[SCRAPE] TIMEOUT after {SCRAPE_TIMEOUT_SECONDS}s - proceeding to parse anyway\n\n")
                 scrape_success = False  # Timed out but continue to parse
             log_file.flush()
         
             # Always run parse (even if scrape timed out, we may have partial data)
-            parse_script = BIN_DIR / "parse.py"
-            log_file.write(f"[PARSE] Starting parse.py ...\n")
-            log_file.flush()
-            
+                parse_script = BIN_DIR / "parse.py"
+                log_file.write(f"[PARSE] Starting parse.py ...\n")
+                log_file.flush()
+                
             try:
                 result = subprocess.run(
                     [sys.executable, str(parse_script)],

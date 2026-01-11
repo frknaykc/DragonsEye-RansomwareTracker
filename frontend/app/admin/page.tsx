@@ -109,6 +109,34 @@ interface DashboardWidget {
   order: number
 }
 
+// Analytics types
+interface AnalyticsSummary {
+  total_requests: number
+  unique_visitors: number
+  today_requests: number
+  this_hour_requests: number
+  last_24h_requests: number
+  last_7d_requests: number
+  top_pages: Record<string, number>
+  top_api_endpoints: Record<string, number>
+  user_agent_breakdown: Record<string, number>
+  top_referrers: Record<string, number>
+  tracking_since: string
+}
+
+interface TrafficData {
+  period: string
+  granularity: string
+  data: Record<string, number>
+}
+
+interface Visitor {
+  ip: string
+  path: string
+  time: string
+  ua: string
+}
+
 export default function AdminPage() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -117,8 +145,22 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState("")
   const [loginAttempts, setLoginAttempts] = useState(0)
+  
+  // OTP state
+  const [requiresOtp, setRequiresOtp] = useState(false)
+  const [otpCode, setOtpCode] = useState("")
+  const [tempToken, setTempToken] = useState("")
+  const [otpSetupData, setOtpSetupData] = useState<any>(null)
+  const [showOtpSetup, setShowOtpSetup] = useState(false)
+  
+  // Analytics state
+  const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null)
+  const [trafficData, setTrafficData] = useState<TrafficData | null>(null)
+  const [recentVisitors, setRecentVisitors] = useState<Visitor[]>([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [trafficPeriod, setTrafficPeriod] = useState("24h")
 
-  const [activeTab, setActiveTab] = useState("ransom-notes")
+  const [activeTab, setActiveTab] = useState("analytics")
   const [ransomNotes, setRansomNotes] = useState<RansomNote[]>([])
   const [decryptors, setDecryptors] = useState<Decryptor[]>([])
   const [loading, setLoading] = useState(false)
@@ -196,7 +238,7 @@ export default function AdminPage() {
     }
   }, [])
 
-  // Handle login - Now uses backend API for authentication
+  // Handle login - Now uses backend API for authentication with OTP support
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError("")
@@ -217,17 +259,119 @@ export default function AdminPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setIsAuthenticated(true)
-        // Store credentials for subsequent API calls (use secure storage in production)
-        sessionStorage.setItem("adminAuth", "authenticated")
-        sessionStorage.setItem("adminCredentials", btoa(`${username}:${password}`))
-        setLoginAttempts(0)
+        
+        if (data.requires_otp) {
+          // OTP required - show OTP input
+          setRequiresOtp(true)
+          setTempToken(data.temp_token)
+          setLoginError("")
+        } else {
+          // No OTP required - login successful
+          setIsAuthenticated(true)
+          sessionStorage.setItem("adminAuth", "authenticated")
+          sessionStorage.setItem("adminCredentials", btoa(`${username}:${password}`))
+          setLoginAttempts(0)
+        }
       } else {
         setLoginAttempts(prev => prev + 1)
         setLoginError(`Invalid credentials. ${5 - loginAttempts - 1} attempts remaining.`)
       }
     } catch (err) {
       setLoginError("Connection error. Please check if the API is running.")
+    }
+  }
+  
+  // Handle OTP verification
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError("")
+    
+    try {
+      const response = await fetch(
+        `${getApiBase()}/api/v1/auth/verify-otp?temp_token=${tempToken}&otp_code=${otpCode}`,
+        { method: "POST" }
+      )
+      
+      if (response.ok) {
+        setIsAuthenticated(true)
+        sessionStorage.setItem("adminAuth", "authenticated")
+        sessionStorage.setItem("adminCredentials", btoa(`${username}:${password}`))
+        setLoginAttempts(0)
+        setRequiresOtp(false)
+        setOtpCode("")
+        setTempToken("")
+      } else {
+        const data = await response.json()
+        setLoginError(data.detail || "Invalid OTP code")
+      }
+    } catch (err) {
+      setLoginError("Connection error. Please try again.")
+    }
+  }
+  
+  // Fetch OTP setup data
+  const fetchOtpSetup = async () => {
+    try {
+      const creds = sessionStorage.getItem("adminCredentials") || btoa(`${username}:${password}`)
+      const response = await fetch(`${getApiBase()}/api/v1/auth/otp-setup`, {
+        headers: { "Authorization": "Basic " + creds }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setOtpSetupData(data)
+        setShowOtpSetup(true)
+      }
+    } catch (err) {
+      console.error("Failed to fetch OTP setup:", err)
+    }
+  }
+  
+  // Fetch analytics data
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true)
+    try {
+      const creds = sessionStorage.getItem("adminCredentials")
+      const headers = { "Authorization": "Basic " + creds }
+      
+      const [summaryRes, trafficRes, visitorsRes] = await Promise.all([
+        fetch(`${getApiBase()}/api/v1/analytics/summary`, { headers }),
+        fetch(`${getApiBase()}/api/v1/analytics/traffic?period=${trafficPeriod}`, { headers }),
+        fetch(`${getApiBase()}/api/v1/analytics/visitors?limit=50`, { headers })
+      ])
+      
+      if (summaryRes.ok) {
+        setAnalyticsSummary(await summaryRes.json())
+      }
+      if (trafficRes.ok) {
+        setTrafficData(await trafficRes.json())
+      }
+      if (visitorsRes.ok) {
+        const data = await visitorsRes.json()
+        setRecentVisitors(data.visitors || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics:", err)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+  
+  // Reset analytics
+  const resetAnalytics = async () => {
+    if (!confirm("Are you sure you want to reset all analytics data?")) return
+    
+    try {
+      const creds = sessionStorage.getItem("adminCredentials")
+      const response = await fetch(`${getApiBase()}/api/v1/analytics/reset`, {
+        method: "POST",
+        headers: { "Authorization": "Basic " + creds }
+      })
+      if (response.ok) {
+        setMessage({ type: "success", text: "Analytics data reset successfully" })
+        fetchAnalytics()
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Failed to reset analytics" })
     }
   }
 
@@ -287,6 +431,7 @@ export default function AdminPage() {
       fetchDecryptors()
       fetchGroups()
       fetchSiteContent()
+      fetchAnalytics()
     }
   }, [isAuthenticated])
 
@@ -684,56 +829,106 @@ export default function AdminPage() {
             </div>
             <CardTitle className="text-2xl">Admin Access</CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
-              Enter your credentials to access the admin panel
+              {requiresOtp ? "Enter your 6-digit authenticator code" : "Enter your credentials to access the admin panel"}
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                  className="mt-1"
-                  autoComplete="username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-1">
+            {!requiresOtp ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    autoComplete="current-password"
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="mt-1"
+                    autoComplete="username"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
                 </div>
-              </div>
-              
-              {loginError && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  {loginError}
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              )}
+                
+                {loginError && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    {loginError}
+                  </div>
+                )}
 
-              <Button type="submit" className="w-full" disabled={loginAttempts >= 5}>
-                <Lock className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-            </form>
+                <Button type="submit" className="w-full" disabled={loginAttempts >= 5}>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleOtpVerify} className="space-y-4">
+                <div>
+                  <Label htmlFor="otp">Authenticator Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="mt-1 text-center text-2xl tracking-widest font-mono"
+                    autoComplete="one-time-code"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Enter the 6-digit code from your authenticator app
+                  </p>
+                </div>
+                
+                {loginError && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    {loginError}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setRequiresOtp(false)
+                      setOtpCode("")
+                      setTempToken("")
+                    }}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={otpCode.length !== 6}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Verify
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -777,6 +972,10 @@ export default function AdminPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="ransom-notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Notes ({ransomNotes.length})
@@ -797,7 +996,239 @@ export default function AdminPage() {
               <Settings className="h-4 w-4" />
               System
             </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Security
+            </TabsTrigger>
           </TabsList>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="border-border bg-card">
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-primary">
+                      {analyticsSummary?.total_requests?.toLocaleString() || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Total Requests</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border bg-card">
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-green-500">
+                      {analyticsSummary?.unique_visitors?.toLocaleString() || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Unique Visitors</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border bg-card">
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-blue-500">
+                      {analyticsSummary?.today_requests?.toLocaleString() || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Today</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border bg-card">
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-purple-500">
+                      {analyticsSummary?.last_24h_requests?.toLocaleString() || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Last 24h</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Traffic Chart & Top Pages */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-border bg-card">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Traffic Overview</CardTitle>
+                    <div className="flex gap-2">
+                      <Select value={trafficPeriod} onValueChange={(v) => { setTrafficPeriod(v); fetchAnalytics(); }}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="24h">24h</SelectItem>
+                          <SelectItem value="7d">7 days</SelectItem>
+                          <SelectItem value="30d">30 days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="sm" onClick={fetchAnalytics}>
+                        <RefreshCw className={`h-4 w-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {trafficData?.data && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {Object.entries(trafficData.data).slice(-12).map(([time, count]) => (
+                          <div key={time} className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground w-32 truncate">
+                              {trafficData.granularity === 'hourly' ? time.split(' ')[1] : time}
+                            </span>
+                            <div className="flex-1 bg-muted rounded-full h-4">
+                              <div 
+                                className="bg-primary h-4 rounded-full transition-all"
+                                style={{ 
+                                  width: `${Math.min(100, (count / Math.max(...Object.values(trafficData.data))) * 100)}%` 
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm font-mono w-12 text-right">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top Pages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {analyticsSummary?.top_pages && Object.entries(analyticsSummary.top_pages).map(([page, count]) => (
+                        <div key={page} className="flex items-center justify-between text-sm">
+                          <span className="truncate flex-1 font-mono text-xs">{page}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Visitors & Referrers */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-border bg-card">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Recent Visitors</CardTitle>
+                    <Button variant="outline" size="sm" onClick={resetAnalytics}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Reset
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 max-h-64 overflow-y-auto">
+                      {recentVisitors.map((visitor, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border/50">
+                          <span className="font-mono text-muted-foreground">{visitor.ip}</span>
+                          <span className="truncate max-w-[150px]">{visitor.path}</span>
+                          <Badge variant={visitor.ua === 'bot' ? 'destructive' : 'secondary'} className="text-xs">
+                            {visitor.ua}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top Referrers</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {analyticsSummary?.top_referrers && Object.entries(analyticsSummary.top_referrers).map(([ref, count]) => (
+                        <div key={ref} className="flex items-center justify-between text-sm">
+                          <span className="truncate flex-1">{ref}</span>
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Tracking since: {analyticsSummary?.tracking_since ? new Date(analyticsSummary.tracking_since).toLocaleString() : 'N/A'}
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* Security Tab */}
+          <TabsContent value="security">
+            <div className="space-y-6">
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Two-Factor Authentication (2FA)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Enable TOTP-based two-factor authentication using Google Authenticator or similar apps.
+                  </p>
+                  
+                  <Button onClick={fetchOtpSetup} variant="outline">
+                    <Key className="h-4 w-4 mr-2" />
+                    Setup / View 2FA
+                  </Button>
+                  
+                  {otpSetupData && (
+                    <div className="mt-4 p-4 border border-border rounded-lg space-y-4">
+                      <div className="flex justify-center">
+                        <img src={otpSetupData.qr_code} alt="QR Code" className="w-48 h-48" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground mb-2">Or enter this secret manually:</p>
+                        <code className="px-3 py-1 bg-muted rounded text-sm font-mono">
+                          {otpSetupData.secret}
+                        </code>
+                      </div>
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-amber-500 mb-2">⚠️ Important</h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Add these lines to your <code>.env</code> file on the server:
+                        </p>
+                        <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                          {otpSetupData.env_config}
+                        </pre>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Then restart the API server for changes to take effect.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">Security Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Admin Username</p>
+                      <p className="text-sm text-muted-foreground">Current: {username || 'admin'}</p>
+                    </div>
+                    <Badge variant="secondary">Set in .env</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Password</p>
+                      <p className="text-sm text-muted-foreground">SHA256 hashed in .env</p>
+                    </div>
+                    <Badge variant="secondary">Set in .env</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">CORS Origins</p>
+                      <p className="text-sm text-muted-foreground">Allowed domains for API access</p>
+                    </div>
+                    <Badge variant="secondary">Set in .env</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Ransom Notes Tab */}
           <TabsContent value="ransom-notes">
